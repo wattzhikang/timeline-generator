@@ -70,6 +70,7 @@ This program is invoked from the command line. There are two switches for the tw
 
 * **-b**: biographical data. Data from multiple files will be combined into the same chart.
 * **-d**: numerical data: Each file will be depicted in a different (but parallel) chart. If you want to show related data in one chart, use multiple columns in stead.
+* **-e**: event data: Data from multiple files will be combined into the same chart.
 
 ### Example
 
