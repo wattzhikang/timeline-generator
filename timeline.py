@@ -1,5 +1,7 @@
 import argparse
 
+from timelineData import *
+
 parser = argparse.ArgumentParser(
     description="A simple python tool for creating time-based charts based on multiple types of data"
 )
@@ -36,26 +38,23 @@ if bioFiles == None and numFiles == None and eventFiles == None:
     print("You must specify at least one file")
     exit(0)
 
+databases = []
+
 if bioFiles != None:
     for fileName in bioFiles:
-        file = open(fileName, "r")
-        print(file)
-        print(file.read())
-        file.close()
+        databases.append(Data(fileName))
 
 if numFiles != None:
     for fileName in numFiles:
-        file = open(fileName, "r")
-        print(file)
-        print(file.read())
-        file.close()
+        databases.append(Data(fileName))
 
 if eventFiles != None:
     for fileName in eventFiles:
-        file = open(fileName, "r")
-        print(file)
-        print(file.read())
-        file.close()
+        databases.append(Data(fileName))
+
+for database in databases:
+    print(database)
+
 
 # for bioSequence in BiographicalData.sequences():
 #     for segment, color in zip(bioSequence.segments(), RandomColors.colors()):

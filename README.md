@@ -1,4 +1,4 @@
-# Biographical Gantt Chart Generator
+# Timeline Chart Generator
 
 This program takes one or more input files and produces a time graph. Supported (and planned) features include:
 
