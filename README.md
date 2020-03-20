@@ -30,11 +30,11 @@ Four columns:
 2. **Birth Date**: a decimal number representing the birth date of the person
 3. **Death Date**: a decimal number representing the death date of the person
 
-'''
+```
 John Smith,-15.8,40.01
 Jane Smith,-13.14,50.6
 Archie Smith,10.9,98.6
-'''
+```
 
 ### Numerical Data
 
@@ -44,13 +44,13 @@ At least two columns:
 2. **Number**: the numerical value at the date
 n. *More Numbers*: more numerical values at the same date
 
-'''
+```
 1.4,7.825
 2.6,14.21
 5.1,28.6
 7,56.98
 8.5,112.5
-'''
+```
 
 ### Event Data
 
@@ -59,10 +59,10 @@ Two columns:
 1. **Date**: the date of the event
 2. **Event**: a string describing or naming the event
 
-'''
+```
 1.4,A thing happened
 12,Another thing happened
-'''
+```
 
 ## Usage
 
@@ -73,6 +73,6 @@ This program is invoked from the command line. There are two switches for the tw
 
 ### Example
 
-'''bash
+```bash
 timeline -b importantPeople.csv importantEvents.csv -n energyProduction.csv population.csv -e events.csv
-'''
+```
