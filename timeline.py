@@ -1,5 +1,6 @@
 import argparse
 import matplotlib.pyplot as plt
+import numpy
 
 from timelineData import *
 
@@ -41,25 +42,25 @@ if bioFiles == None and numFiles == None and eventFiles == None:
 
 bioDatabase = PersonDatabase()
 numDatabases = []
+eventDatabase = EventDatabase()
 
 if bioFiles != None:
-    for fileName in bioFiles:
-        bioDatabase.addData(fileName)
+    for filename in bioFiles:
+        bioDatabase.addData(filename)
 
 if numFiles != None:
     for filename in numFiles:
         numDatabases.append(NumericalData(filename))
 
-print(bioDatabase)
-for database in numDatabases:
-    print(database)
+if eventFiles != None:
+    for filename in eventFiles:
+        eventDatabase.addData(filename)
 
 ### Get applicable subplots
 
 import matplotlib.pyplot as plt
 
-fig, (bioChart, *numCharts) = plt.subplots(nrows=1+len(numDatabases))
-
+fig, (eventChart, bioChart, *numCharts) = plt.subplots(nrows=2+len(numDatabases), sharex="all")
 
 ### Biographical information
 ## Organize and sort biographical information
@@ -81,7 +82,6 @@ bioStacks.reverse()
 
 ## Plot biographical information
 
-bioChart.set_xlim(bioDatabase.minBirthDate(), bioDatabase.maxDeathDate())
 bioChart.set_xlabel("Year")
 bioChart.set_yticks([])
 bioChart.grid(axis="x")
@@ -100,6 +100,41 @@ for axis, database in zip(numCharts, numDatabases):
         axis.plot(database.getTimeIndex(), database.getColumn(), label=database.firstColumnLabel())
     axis.legend()
 
+### Event Data
+
+levels = numpy.tile([3, 2, 1], int(numpy.ceil(eventDatabase.numItems()/3)))[:eventDatabase.numItems()]
+
+markerline, stemline, baseline = eventChart.stem(eventDatabase.dateSeries(), levels, use_line_collection=True)
+
+for event, level in zip(eventDatabase.events(), levels):
+    eventChart.annotate(event.brief, xy=(event.date, level), xytext=(0,0), textcoords="offset points", va="top", ha="left")
+
+markerline.set_ydata(numpy.zeros(eventDatabase.numItems()))
+
+plt.setp(baseline, visible=False)
+
+eventChart.get_yaxis().set_visible(False)
+
 ### Plot the chart
+
+minDate, maxDate = None, None
+
+if bioDatabase.numItems() > 0:
+    minDate = bioDatabase.minBirthDate()
+    maxDate = bioDatabase.maxDeathDate()
+
+if eventDatabase.numItems() > 0:
+    if eventDatabase.minEventDate() < minDate or minDate == None:
+        minDate = eventDatabase.minEventDate()
+    if eventDatabase.maxEventDate() > maxDate or maxDate == None:
+        maxDate = eventDatabase.maxEventDate()
+
+for numDatabase in numDatabases:
+    if numDatabase.minDate() < minDate or minDate == None:
+        minDate = numDatabase.minDate()
+    if numDatabase.maxDate() > maxDate or maxDate == None:
+        maxDate = numDatabase.maxDate()
+
+plt.xlim(minDate, maxDate)
 
 plt.show()

@@ -10,7 +10,7 @@ This program takes one or more input files and produces a time graph. Supported 
 
 ## Status
 
-Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. All other features are in progress.
+Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. Basic timelines are now supported. All other features are in progress.
 
 ## Input file format
 
@@ -71,6 +71,8 @@ This program is invoked from the command line. There are two switches for the tw
 * **-b**: biographical data. Data from multiple files will be combined into the same chart.
 * **-d**: numerical data: Each file will be depicted in a different (but parallel) chart. If you want to show related data in one chart, use multiple columns in stead.
 * **-e**: event data: Data from multiple files will be combined into the same chart.
+
+DO NOT use multiple instances of the same switch (eg "timeline -b some-data.csv -b some-more-data.csv").
 
 ### Example
 

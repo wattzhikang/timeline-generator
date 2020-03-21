@@ -14,6 +14,11 @@ class Person:
     def __repr__(self):
         return f"{self.name}, born {self.birth}, died {self.death}"
 
+class Event:
+    def __init__(self, date, brief):
+        self.date = date
+        self.brief = brief
+
 class Data:
     def createDatabase(self, columnLabels=None, filename=None, indexColumn=False):
         database = None
@@ -30,10 +35,12 @@ class Data:
             else:
                 database = pandas.read_csv(file, header=None)
             file.close()
+            print(database)
             if columnLabels != None:
                 database.columns = columnLabels
         if indexColumn:
             database = database.set_index(database.columns[0])
+        print(database)
         return database
 
     headerRegex = re.compile(r"\-?[0-9]+\.?[0-9]*.\-?[0-9]+\.?[0-9]*")
@@ -72,6 +79,30 @@ class PersonDatabase(Data):
         for row in self.database.itertuples():
             yield Person(row.name, row.birth, row.death)
 
+class EventDatabase(Data):
+    columns = ["date","event"]
+
+    def __init__(self):
+        self.database = self.createDatabase(columnLabels=self.columns)
+    
+    def addData(self, fileName):
+        newDatabase = self.createDatabase(filename=fileName, columnLabels=self.columns)
+        self.database = pandas.concat([self.database, newDatabase], ignore_index=True, sort=False)
+        self.database = self.database.sort_values(by="date")
+
+    def events(self):
+        for row in self.database.itertuples():
+            yield Event(row.date, row.event)
+    
+    def minEventDate(self):
+        return self.database["date"].min()
+
+    def maxEventDate(self):
+        return self.database["date"].max()
+
+    def dateSeries(self):
+        return self.database["date"]
+
 class NumericalData(Data):
     def __init__(self, fileName):
         self.database = self.createDatabase(filename=fileName, indexColumn=True)
@@ -96,3 +127,9 @@ class NumericalData(Data):
     
     def getColumn(self):
         return self.database[self.database.columns[0]]
+    
+    def minDate(self):
+        return self.database.index.min()
+    
+    def maxDate(self):
+        return self.database.index.max()
