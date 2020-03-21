@@ -1,4 +1,5 @@
 import argparse
+import matplotlib.pyplot as plt
 
 from timelineData import *
 
@@ -38,24 +39,49 @@ if bioFiles == None and numFiles == None and eventFiles == None:
     print("You must specify at least one file")
     exit(0)
 
+bioDatabase = PersonDatabase()
 databases = []
 
 if bioFiles != None:
     for fileName in bioFiles:
-        databases.append(Data(fileName))
+        bioDatabase.addData(fileName)
 
-if numFiles != None:
-    for fileName in numFiles:
-        databases.append(Data(fileName))
+### Get applicable subplots
 
-if eventFiles != None:
-    for fileName in eventFiles:
-        databases.append(Data(fileName))
+import matplotlib.pyplot as plt
 
-for database in databases:
-    print(database)
+yAxis, bioChart = plt.subplots()
 
+### Biographical information
+## Organize and sort biographical information
 
-# for bioSequence in BiographicalData.sequences():
-#     for segment, color in zip(bioSequence.segments(), RandomColors.colors()):
-#         #add segment with the random color
+bioDatabase.sortByBirthDate()
+
+bioStacks = [ ]
+
+for person in bioDatabase.people():
+    placed = False
+    for stack in bioStacks:
+        if len(stack) < 1 or stack[len(stack) - 1].death < person.birth:
+            stack.append(person)
+            placed = True
+            break
+    bioStacks.append([person])
+
+bioStacks.reverse()
+
+## Plot biographical information
+
+bioChart.set_xlim(bioDatabase.minBirthDate(), bioDatabase.maxDeathDate())
+bioChart.set_xlabel("Year")
+bioChart.set_yticks([])
+bioChart.grid(axis="x")
+
+for stack, level in zip(bioStacks, range(len(bioStacks))): # zip this with a random color object
+    for person in stack:
+        bioChart.broken_barh([(person.birth, person.lifespan())], (10 * level, 9))
+        bioChart.text(person.birth + (person.lifespan() / 2), 10 * level + 3, person.name)
+
+### Plot the chart
+
+plt.show()
