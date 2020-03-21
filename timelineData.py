@@ -1,5 +1,6 @@
 import re
 import pandas
+import numpy
 
 class Person:
     def __init__(self, name, birth, death):
@@ -14,19 +15,25 @@ class Person:
         return f"{self.name}, born {self.birth}, died {self.death}"
 
 class Data:
-    def __init__(self, filename, database):
+    def createDatabase(self, columnLabels=None, filename=None, indexColumn=False):
+        database = None
+        # if no input file, cretae blank database
         if filename == None:
-            self.database = database
+            if columnLabels == None:
+                database = pandas.DataFrame()
+            else:
+                database = pandas.DataFrame(columns=columnLabels)
         else:
-            self.database = self.createDatabase(filename)
-    
-    def createDatabase(self, filename):
-        file = open(filename, "r")
-        if self.hasHeader(file):
-                database = pandas.read_csv(file, header=0, names=["name", "birth", "death"])
-        else:
-            database = pandas.read_csv(file, header=None, names=["name","birth","death"])
-        file.close()
+            file = open(filename, "r")
+            if self.hasHeader(file):
+                database = pandas.read_csv(file, header=0)
+            else:
+                database = pandas.read_csv(file, header=None)
+            file.close()
+            if columnLabels != None:
+                database.columns = columnLabels
+        if indexColumn:
+            database = database.set_index(database.columns[0])
         return database
 
     headerRegex = re.compile(r"\-?[0-9]+\.?[0-9]*.\-?[0-9]+\.?[0-9]*")
@@ -43,12 +50,14 @@ class Data:
         return repr(self.database)
 
 class PersonDatabase(Data):
+    columns = ["name","birth","death"]
+
     def __init__(self):
-        Data.__init__(self, None, database=pandas.DataFrame({"name": [], "birth": [], "death": []}))
+        self.database = self.createDatabase(columnLabels=self.columns)
     
-    def addData(self, filename):
-        newDatabase = self.createDatabase(filename)
-        self.database = pandas.concat([self.database, newDatabase], ignore_index=True)
+    def addData(self, fileName):
+        newDatabase = self.createDatabase(filename=fileName, columnLabels=self.columns)
+        self.database = pandas.concat([self.database, newDatabase], ignore_index=True, sort=False)
 
     def sortByBirthDate(self):
         self.database = self.database.sort_values(by="birth")
@@ -62,3 +71,28 @@ class PersonDatabase(Data):
     def people(self):
         for row in self.database.itertuples():
             yield Person(row.name, row.birth, row.death)
+
+class NumericalData(Data):
+    def __init__(self, fileName):
+        self.database = self.createDatabase(filename=fileName, indexColumn=True)
+    
+    def getTimeIndex(self):
+        return self.database.index
+    
+    def allColumns(self):
+        serieses = []
+        for column in self.database.columns:
+            serieses.append(self.database[column])
+        return serieses
+    
+    def allColumnLabels(self):
+        return self.database.columns
+    
+    def firstColumnLabel(self):
+        return self.database.columns[0]
+    
+    def numColumns(self):
+        return len(self.database.columns)
+    
+    def getColumn(self):
+        return self.database[self.database.columns[0]]

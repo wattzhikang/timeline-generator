@@ -10,7 +10,7 @@ This program takes one or more input files and produces a time graph. Supported 
 
 ## Status
 
-Basic biographical Gantt charts are now supported. All other features are in progress.
+Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. All other features are in progress.
 
 ## Input file format
 

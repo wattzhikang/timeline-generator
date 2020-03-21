@@ -40,17 +40,26 @@ if bioFiles == None and numFiles == None and eventFiles == None:
     exit(0)
 
 bioDatabase = PersonDatabase()
-databases = []
+numDatabases = []
 
 if bioFiles != None:
     for fileName in bioFiles:
         bioDatabase.addData(fileName)
 
+if numFiles != None:
+    for filename in numFiles:
+        numDatabases.append(NumericalData(filename))
+
+print(bioDatabase)
+for database in numDatabases:
+    print(database)
+
 ### Get applicable subplots
 
 import matplotlib.pyplot as plt
 
-yAxis, bioChart = plt.subplots()
+fig, (bioChart, *numCharts) = plt.subplots(nrows=1+len(numDatabases))
+
 
 ### Biographical information
 ## Organize and sort biographical information
@@ -77,10 +86,19 @@ bioChart.set_xlabel("Year")
 bioChart.set_yticks([])
 bioChart.grid(axis="x")
 
-for stack, level in zip(bioStacks, range(len(bioStacks))): # zip this with a random color object
+for stack, level in zip(bioStacks, range(len(bioStacks))): # zip this with a random color object, don't worry, zip only uses shortest
     for person in stack:
         bioChart.broken_barh([(person.birth, person.lifespan())], (10 * level, 9))
         bioChart.text(person.birth + (person.lifespan() / 2), 10 * level + 3, person.name)
+
+### Numerical Data
+
+for axis, database in zip(numCharts, numDatabases):
+    if database.numColumns() > 1:
+        axis.stackplot(database.getTimeIndex(), database.allColumns(), labels=database.allColumnLabels())
+    else:
+        axis.plot(database.getTimeIndex(), database.getColumn(), label=database.firstColumnLabel())
+    axis.legend()
 
 ### Plot the chart
 
