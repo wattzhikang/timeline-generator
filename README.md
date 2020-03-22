@@ -10,8 +10,7 @@ This program takes one or more input files and produces a time graph. Supported 
 
 ## Status
 
-Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. Basic timelines are now supported. All other features are in progress.
-
+Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. Basic timelines are now supported. NOTE: only one file per feature is supported. This will change in the future.
 ## Input file format
 
 Currently this program only supports data files in CSV (comma-separated values) format, although there are plans to add the ability to read data from Excel and OpenDocument spreadsheets, and even JSON.

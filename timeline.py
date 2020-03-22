@@ -12,7 +12,7 @@ parser.add_argument(
     "--biographical-data",
     nargs="+",
     help="One or more files containing biographical data",
-    dest="bioFiles",
+    dest="bioFile",
     metavar="filename.csv"
 )
 parser.add_argument(
@@ -20,7 +20,7 @@ parser.add_argument(
     "--numerical-data",
     nargs="+",
     help="One or more files containing numerical data",
-    dest="numFiles",
+    dest="numFile",
     metavar="filename.csv"
 )
 parser.add_argument(
@@ -28,112 +28,117 @@ parser.add_argument(
     "--event-data",
     nargs="+",
     help="One or more files containing numerical data",
-    dest="eventFiles",
+    dest="eventFile",
     metavar="filename.csv"
 )
 
-bioFiles = parser.parse_args().bioFiles
-numFiles = parser.parse_args().numFiles
-eventFiles = parser.parse_args().eventFiles
+bioFile = parser.parse_args().bioFile[0]
+numFile = parser.parse_args().numFile[0]
+eventFile = parser.parse_args().eventFile[0]
 
-if bioFiles == None and numFiles == None and eventFiles == None:
+if bioFile == None and numFile == None and eventFile == None:
     print("You must specify at least one file")
     exit(0)
 
-bioDatabase = PersonDatabase()
-numDatabases = []
-eventDatabase = EventDatabase()
+ganttData = None
+if bioFile != None:
+    ganttData = GanttDatabase(bioFile)
 
-if bioFiles != None:
-    for filename in bioFiles:
-        bioDatabase.addData(filename)
+numData = None
+if numFile != None:
+    numData = Database(numFile)
 
-if numFiles != None:
-    for filename in numFiles:
-        numDatabases.append(NumericalData(filename))
-
-if eventFiles != None:
-    for filename in eventFiles:
-        eventDatabase.addData(filename)
+eventData = None
+if eventFile != None:
+    eventData = EventDatabase(eventFile)
 
 ### Get applicable subplots
 
 import matplotlib.pyplot as plt
 
-fig, (eventChart, bioChart, *numCharts) = plt.subplots(nrows=2+len(numDatabases), sharex="all")
+chartsToGenerate = 0
+chartIndicies = [0, 0, 0]
+
+for i, base in zip(range(3), [ganttData, numData, eventData]):
+    if base != None:
+        chartIndicies[i] = chartsToGenerate
+        chartsToGenerate += 1
+
+fig, *charts = plt.subplots(nrows=chartsToGenerate, sharex="all")
+
+ganttChart = None
+if ganttData != None:
+    ganttChart = charts[0][chartIndicies[0]]
+
+numChart = None
+if numData != None:
+    numChart = charts[0][chartIndicies[1]]
+
+eventChart = None
+if eventData != None:
+    eventChart = charts[0][chartIndicies[2]]
 
 ### Biographical information
 ## Organize and sort biographical information
 
-bioDatabase.sortByBirthDate()
+if ganttData != None:
 
-bioStacks = [ ]
+    dashStacks = [ ]
 
-for person in bioDatabase.people():
-    placed = False
-    for stack in bioStacks:
-        if len(stack) < 1 or stack[len(stack) - 1].death < person.birth:
-            stack.append(person)
-            placed = True
-            break
-    bioStacks.append([person])
+    for dash in ganttData.dashes():
+        placed = False
+        for stack in dashStacks:
+            if len(stack) < 1 or stack[len(stack) - 1].end < dash.start:
+                stack.append(dash)
+                placed = True
+                break
+        if not placed:
+            dashStacks.append([dash])
+    
+    dashStacks.reverse()
 
-bioStacks.reverse()
+    ## Plot biographical information
 
-## Plot biographical information
+    ganttChart.set_xlabel("Year")
+    ganttChart.set_yticks([])
+    ganttChart.grid(axis="x")
 
-bioChart.set_xlabel("Year")
-bioChart.set_yticks([])
-bioChart.grid(axis="x")
-
-for stack, level in zip(bioStacks, range(len(bioStacks))): # zip this with a random color object, don't worry, zip only uses shortest
-    for person in stack:
-        bioChart.broken_barh([(person.birth, person.lifespan())], (10 * level, 9))
-        bioChart.text(person.birth + (person.lifespan() / 2), 10 * level + 3, person.name)
+    for stack, level in zip(dashStacks, range(len(dashStacks))): # zip this with a random color object, don't worry, zip only uses shortest
+        for dash in stack:
+            ganttChart.broken_barh([(dash.start, dash.duration())], (10 * level, 9))
+            ganttChart.text(dash.start + (dash.duration() / 2), 10 * level + 3, dash.name)
 
 ### Numerical Data
 
-for axis, database in zip(numCharts, numDatabases):
-    if database.numColumns() > 1:
-        axis.stackplot(database.getTimeIndex(), database.allColumns(), labels=database.allColumnLabels())
-    else:
-        axis.plot(database.getTimeIndex(), database.getColumn(), label=database.firstColumnLabel())
-    axis.legend()
+if numData != None:
+    numChart.stackplot(numData.allDates(), numData.allSerieses(), labels=numData.getColumnLabels())
+    numChart.legend()
 
 ### Event Data
 
-levels = numpy.tile([3, 2, 1], int(numpy.ceil(eventDatabase.numItems()/3)))[:eventDatabase.numItems()]
+if eventData != None:
+    levels = numpy.tile([3, 2, 1], int(numpy.ceil(eventData.numItems()/3)))[:eventData.numItems()]
 
-markerline, stemline, baseline = eventChart.stem(eventDatabase.dateSeries(), levels, use_line_collection=True)
+    markerline, stemline, baseline = eventChart.stem(eventData.allDates(), levels, use_line_collection=True)
 
-for event, level in zip(eventDatabase.events(), levels):
-    eventChart.annotate(event.brief, xy=(event.date, level), xytext=(0,0), textcoords="offset points", va="top", ha="left")
+    for event, level in zip(eventData.events(), levels):
+        eventChart.annotate(event.brief, xy=(event.date, level), xytext=(0,0), textcoords="offset points", va="top", ha="left")
 
-markerline.set_ydata(numpy.zeros(eventDatabase.numItems()))
+    markerline.set_ydata(numpy.zeros(eventData.numItems()))
 
-plt.setp(baseline, visible=False)
+    plt.setp(baseline, visible=False)
 
-eventChart.get_yaxis().set_visible(False)
+    eventChart.get_yaxis().set_visible(False)
 
 ### Plot the chart
 
 minDate, maxDate = None, None
 
-if bioDatabase.numItems() > 0:
-    minDate = bioDatabase.minBirthDate()
-    maxDate = bioDatabase.maxDeathDate()
-
-if eventDatabase.numItems() > 0:
-    if eventDatabase.minEventDate() < minDate or minDate == None:
-        minDate = eventDatabase.minEventDate()
-    if eventDatabase.maxEventDate() > maxDate or maxDate == None:
-        maxDate = eventDatabase.maxEventDate()
-
-for numDatabase in numDatabases:
-    if numDatabase.minDate() < minDate or minDate == None:
-        minDate = numDatabase.minDate()
-    if numDatabase.maxDate() > maxDate or maxDate == None:
-        maxDate = numDatabase.maxDate()
+for base in [ganttData, numData, eventData]:
+    if minDate == None or base.minDate() < minDate:
+        minDate = base.minDate()
+    if maxDate == None or base.maxDate() > maxDate:
+        maxDate = base.maxDate()
 
 plt.xlim(minDate, maxDate)
 
