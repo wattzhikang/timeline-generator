@@ -2,18 +2,21 @@
 
 This program takes one or more input files and produces a time graph. Supported (and planned) features include:
 
-* If the input file contains **biographical data**, the resulting output will take the form of a [Gantt chart](https://en.wikipedia.org/wiki/Gantt_chart), much like [this example](https://en.wikipedia.org/wiki/A_Chart_of_Biography).
+* **[Gantt charts](https://en.wikipedia.org/wiki/Gantt_chart)** can be used to plot lifespans, events with duration, eras and historical periods, etc. Biographical Gantt charts can look much like [this example](https://en.wikipedia.org/wiki/A_Chart_of_Biography).
 
-* If the input file contains one or more columns of **numerical data**, the output will take the form of a [line chart](https://en.wikipedia.org/wiki/Line_chart). If there are multiple columns of data, the result will be a stacked line chart.
+* **Numerical data** can be plotted as a [line chart](https://en.wikipedia.org/wiki/Line_chart) or a stacked area chart, depending on the command line switch
 
-* If the input file contains a single column of text data (and an obligatory date column), the output will result in a text timeline.
+* **Text timelines** for events without duration
 
 ## Status
 
-Basic biographical Gantt charts are now supported. Line charts and stacked area charts now supported. Basic timelines are now supported. NOTE: only one file per feature is supported. This will change in the future.
+Most planned features supported. The charts should look prettier, though.
+
 ## Input file format
 
 Currently this program only supports data files in CSV (comma-separated values) format, although there are plans to add the ability to read data from Excel and OpenDocument spreadsheets, and even JSON.
+
+Files are not required to have column labels, but they may be useful for chart legends in numerical data. The program should have the ability to detect the presence or absence of column labels.
 
 ### Date format
 
@@ -21,13 +24,13 @@ Currently, the program only supports decimal numbers for time indexing. Those de
 
 There are plans to support more date formats.
 
-### Biographical Data
+### Gantt Data
 
-Four columns:
+Three columns:
 
-1. **Name**: a string containing the name of the person
-2. **Birth Date**: a decimal number representing the birth date of the person
-3. **Death Date**: a decimal number representing the death date of the person
+1. **Name**: a string containing the name of the event
+2. **Start Date**: a decimal number representing the start of the event
+3. **Death Date**: a decimal number representing the end of the event
 
 ```
 John Smith,-15.8,40.01
@@ -67,14 +70,15 @@ Two columns:
 
 This program is invoked from the command line. There are two switches for the two different types of data:
 
-* **-b**: biographical data. Data from multiple files will be combined into the same chart.
-* **-d**: numerical data: Each file will be depicted in a different (but parallel) chart. If you want to show related data in one chart, use multiple columns in stead.
-* **-e**: event data: Data from multiple files will be combined into the same chart.
+* **-g**: Gantt chart data
+* **-l**: Linear numerical data
+* **-a**: Area data for a stacked area chart
+* **-e**: Event data
 
-DO NOT use multiple instances of the same switch (eg "timeline -b some-data.csv -b some-more-data.csv").
+There will be one file generated per chart
 
 ### Example
 
 ```bash
-timeline -b importantPeople.csv importantEvents.csv -n energyProduction.csv population.csv -e events.csv
+python3 timeline -g importantPeople.csv importantProjects.csv -l gdp.csv population.csv -a energyProduction.csv -e events.csv
 ```
