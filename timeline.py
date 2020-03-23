@@ -49,7 +49,7 @@ labelFiles = parser.parse_args().eventFiles
 
 ### Construct database objects
 
-if dashFiles == None and linearFiles == None and labelFiles == None:
+if dashFiles == None and linearFiles == None and areaFiles == None and labelFiles == None:
     print("You must specify at least one file")
     exit(0)
 
@@ -76,36 +76,25 @@ if labelFiles != None:
 ### Get applicable subplots
 
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
-chartsToGenerate = 0
-chartIndicies = [0, 0, 0, 0]
+# calculate height ratios for the plots, shringking gantt plots with fewer elements
+maxGantt = max(ganttData, key= lambda database : database.maxOverlaps()).maxOverlaps()
+heights = [ ]
+for database in ganttData:
+    heights.append(database.maxOverlaps() / maxGantt)
+heights = heights + ([ 1 ] * len(linearData + areaData + eventData))
 
-# End invariants:
-#   chartsToGenerate has the number of charts to generate and the starting index
-#       of the next chart to allocate
-#   chartIndicies[i] holds the index of the charts allocated to i
-for i, base in zip(range(4), [ganttData, linearData, areaData, eventData]):
-    chartIndicies[i] = chartsToGenerate
-    chartsToGenerate += len(base)
+print(heights)
 
-fig, *charts = plt.subplots(nrows=chartsToGenerate, sharex="all")
+gdspec = gridspec.GridSpec(len(ganttData + linearData + areaData + eventData), 1, height_ratios=heights)
 
-# allocate charts
-
-if len(ganttData + linearData + areaData + eventData) > 1:
-    ganttCharts = charts[0][chartIndicies[0] : (chartIndicies[0] + len(ganttData))]
-    linearCharts = charts[0][chartIndicies[1] : (chartIndicies[1] + len(linearData))]
-    areaCharts = charts[0][chartIndicies[2] : (chartIndicies[2] + len(areaData))]
-    eventCharts = charts[0][chartIndicies[3] : (chartIndicies[3] + len(eventData))]
-else:
-    ganttCharts = charts[chartIndicies[0] : (chartIndicies[0] + len(ganttData))]
-    linearCharts = charts[chartIndicies[1] : (chartIndicies[1] + len(linearData))]
-    areaCharts = charts[chartIndicies[2] : (chartIndicies[2] + len(areaData))]
-    eventCharts = charts[chartIndicies[3] : (chartIndicies[3] + len(eventData))]
+# running index for charts
+chartIndex = 0
 
 ### Biographical information
 
-for database, chart in zip(ganttData, ganttCharts):
+for database in ganttData:
 
     ## Organize and sort biographical information
 
@@ -128,6 +117,8 @@ for database, chart in zip(ganttData, ganttCharts):
 
     ## Plot biographical information
 
+    chart = plt.gcf().add_subplot(gdspec[chartIndex])
+
     chart.set_yticks([])
     chart.grid(axis="x")
 
@@ -135,25 +126,36 @@ for database, chart in zip(ganttData, ganttCharts):
         for dash in stack:
             chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9))
             chart.text(dash.start + (dash.duration() / 2), 10 * level + 3, dash.name)
+    
+    chartIndex += 1
 
 ### Linear Data
 
-for database, chart in zip(linearData, linearCharts):
+for database in linearData:
+    chart = plt.gcf().add_subplot(gdspec[chartIndex])
+
     for series in database.serieses():
         chart.plot(database.allDates(), series)
+    
+    chartIndex += 1
 
 ### Area Data
 
-for database, chart in zip(areaData, areaCharts):
+for database in areaData:
+    chart = plt.gcf().add_subplot(gdspec[chartIndex])
+
     chart.stackplot(database.allDates(), database.allSerieses(), labels=database.getColumnLabels())
     chart.legend()
 
+    chartIndex += 1
+
 ### Event Data
 
-for database, chart in zip(eventData, eventCharts):
+for database in eventData:
+    chart = plt.gcf().add_subplot(gdspec[chartIndex])
 
     # create an array with the level of each label. There is probably a better way to do this
-    levels = numpy.tile([3, 2, 1], int(numpy.ceil(database.numItems()/3)))[:database.numItems()]
+    levels = numpy.tile([6, 5, 4, 3, 2, 1], int(numpy.ceil(database.numItems()/6)))[:database.numItems()]
 
     markerline, stemline, baseline = chart.stem(database.allDates(), levels, use_line_collection=True)
 
@@ -165,6 +167,8 @@ for database, chart in zip(eventData, eventCharts):
     plt.setp(baseline, visible=False)
 
     chart.get_yaxis().set_visible(False)
+
+    chartIndex += 1
 
 ### Plot the chart
 

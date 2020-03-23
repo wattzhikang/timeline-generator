@@ -113,6 +113,18 @@ class GanttDatabase(Database):
     def dashes(self):
         for record in self.database.itertuples():
             yield Dash(record.name, record.start, record.end)
+    
+    # a naive approach requiring O(n^2) time and O(n) space
+    # but unless you have thousands of people, it isn't worth
+    # the time to build a tree
+    def maxOverlaps(self):
+        maximum = 0
+        currentOverlaps = numpy.array( [ ] ) # end points
+        for dash in self.dashes():
+            currentOverlaps = currentOverlaps[currentOverlaps >= dash.start]
+            currentOverlaps = numpy.append(currentOverlaps, dash.end)
+            maximum = max(maximum, len(currentOverlaps))
+        return maximum
 
 class EventDatabase(Database):
     def __init__(self, filename):
