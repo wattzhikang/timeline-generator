@@ -78,14 +78,17 @@ if labelFiles != None:
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
+if len(ganttData) != 0:
 # calculate height ratios for the plots, shringking gantt plots with fewer elements
-maxGantt = max(ganttData, key= lambda database : database.maxOverlaps()).maxOverlaps()
-heights = [ ]
-for database in ganttData:
-    heights.append(database.maxOverlaps() / maxGantt)
-heights = heights + ([ 1 ] * len(linearData + areaData + eventData))
+    maxGantt = max(ganttData, key= lambda database : database.maxOverlaps()).maxOverlaps()
+    heights = [ ]
+    for database in ganttData:
+        heights.append(database.maxOverlaps() / maxGantt)
+    heights = heights + ([ 1 ] * len(linearData + areaData + eventData))
 
-print(heights)
+    print(heights)
+else:
+    heights = numpy.repeat(1.0, len(ganttData + linearData + areaData + eventData))
 
 gdspec = gridspec.GridSpec(len(ganttData + linearData + areaData + eventData), 1, height_ratios=heights)
 
