@@ -1,6 +1,7 @@
 import re
 import pandas
 import numpy
+import json
 
 # Simple struct used for iteration in building the Gantt Chart
 class Dash:
@@ -29,8 +30,13 @@ class Database:
 
     def createDatabase(self, filename, hasIndexColumn=True, columnLabels=None):
         file = open(filename, "r")
-        hasHeader = self.isHeader(file.readline())
-        file.seek(0,0) # seek file back for reading
+
+        # these methods mess with the file read head, be careful in changing them
+        jsonStr = self.getJSONString(file) # read json string, if it exists
+        hasHeader = self.isHeader(file.readline()) #
+        file.seek(len(jsonStr)) # seek file back for reading
+
+        # read the database
         if hasHeader: # pandas needs to be told if the file has a header or not
             self.database = pandas.read_csv(file, header=0)
         else:
@@ -39,7 +45,57 @@ class Database:
             self.database.columns = columnLabels
         if hasIndexColumn: # an index column would be a series of dates
             self.database.set_index(self.database.columns[0], inplace=True)
+        
+        # we're done with the file
         file.close()
+
+        # parse the json string, if it exists
+        if jsonStr != "":
+            jsonObj = json.loads(jsonStr)
+
+            # parse out which columns go on which axis
+            self.leftColumns = [ ]
+            self.rightColumns = [ ]
+            for column in self.database.columns:
+                if "rightAxis" in jsonObj and column in jsonObj["rightAxis"]:
+                    self.rightColumns.append(column)
+                else:
+                    self.leftColumns.append(column)
+
+            # parse out axis scales, if they exist
+            if "leftAxisMax" in jsonObj:
+                self.leftAxisMax = jsonObj["leftAxisMax"]
+            else:
+                self.leftAxisMax = None
+            if "leftAxisMin" in jsonObj:
+                self.leftAxisMin = jsonObj["leftAxisMin"]
+            else:
+                self.leftAxisMin = None
+            if "rightAxisMax" in jsonObj:
+                self.rightAxisMax = jsonObj["rightAxisMax"]
+            else:
+                self.rightAxisMax = None
+            if "rightAxisMin" in jsonObj:
+                self.rightAxisMin = jsonObj["rightAxisMin"]
+            else:
+                self.rightAxisMin = None
+        else:
+            self.leftColumns = self.database.columns
+            self.rightColumns = [ ]
+    
+    def getJSONString(self, file):
+        if file.read(1) == "{":
+            file.seek(0,0)
+            str = ""
+            char = file.read(1)
+            while char != "}":
+                str += char
+                char = file.read(1)
+            str += char
+            return str
+        else:
+            file.seek(0,0)
+            return ""
 
     # This regex basically looks for a number that takes up an entire column. If a row has a number that
     # takes up an entire column, then the row probably isn't a header.
@@ -64,6 +120,20 @@ class Database:
     def serieses(self): #standard plural form
         for column in self.database.columns:
             yield self.database[column]
+
+    def leftSerieses(self):
+        serieses = []
+        for column in self.database.columns:
+            if column in self.leftColumns:
+                serieses.append(self.database[column])
+        return serieses
+    
+    def rightSerieses(self):
+        serieses = []
+        for column in self.database.columns:
+            if column in self.rightColumns:
+                serieses.append(self.database[column])
+        return serieses
     
     # returns a list of pandas serieses
     def allSerieses(self):

@@ -92,6 +92,8 @@ else:
 
 gdspec = gridspec.GridSpec(len(ganttData + linearData + areaData + eventData), 1, height_ratios=heights)
 
+
+
 # running index for charts
 chartIndex = 0
 
@@ -137,8 +139,16 @@ for database in ganttData:
 for database in linearData:
     chart = plt.gcf().add_subplot(gdspec[chartIndex])
 
-    for series in database.serieses():
+    for series in database.leftSerieses():
         chart.plot(database.allDates(), series)
+    
+    ax2 = chart.twinx()
+
+    for series in database.rightSerieses():
+        ax2.plot(database.allDates(), series)
+
+    print(database.leftSerieses())
+    print(database.rightSerieses())
     
     chartIndex += 1
 
