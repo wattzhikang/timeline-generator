@@ -54,6 +54,14 @@ n. *More Numbers*: more numerical values at the same date
 8.5,112.5
 ```
 
+Optionally, you can assign columns to a secondary y-axis with a JSON string. In order to assign columns, you must name your columns with a header row.
+
+```
+{
+    "rightAxis": [ "Column2" ]
+}
+```
+
 ### Event Data
 
 Two columns:
