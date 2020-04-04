@@ -56,9 +56,31 @@ n. *More Numbers*: more numerical values at the same date
 
 Optionally, you can assign columns to a secondary y-axis with a JSON string. In order to assign columns, you must name your columns with a header row.
 
+The primary and secondary axes are specified by two objects: primaryAxis and secondaryAxis, respectively. These two objects may contain any combination of the following keywords:
+
+**Max**: the maximum value of the y axis. *Not currently supported*
+**Min**: the minimum value of the y axis. *Not currently supported*
+**Interval**: the distance between the tick marks.
+**Columns**: A list of objects. Each object must contain a **name** field, which must correspond to a named column. Each object may optionally contain a **style** field, which specified the style of the line. Currently, only the values "default" and "dashed" are supported.
+
 ```
 {
-    "rightAxis": [ "Column2" ]
+	"primaryAxis": {
+		"max": 100,
+		"min": 0,
+		"interval": 10,
+		"columns": [
+			{"name": "Column1"}
+		]
+	},
+	"secondaryAxis": {
+		"max": 1.0,
+		"min": 0.0,
+		"interval": 0.1,
+		"columns": [
+			{"name": "Column2", "style": "dashed"}
+		]
+	}
 }
 ```
 
