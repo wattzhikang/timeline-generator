@@ -144,8 +144,11 @@ for database in linearData:
         chart = primary if series.isPrimary else secondary
         style = "--" if series.isDashed else "-"
 
-        chart.plot(series.dates, series.data, linestyle=style)
+        chart.plot(series.dates, series.data, label=series.name, linestyle=style)
     
+    primary.legend(loc=2)
+    secondary.legend(loc=1)
+
     chartIndex += 1
 
 ### Area Data
