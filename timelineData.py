@@ -157,7 +157,13 @@ class Database:
     def seriesGenerator(self): #standard plural form
         for series in self.serieses:
             yield series
-    
+
+    def allSerieses(self):
+        retSerieses = []
+        for column in self.database.columns:
+            retSerieses.append(self.database[column])
+        return retSerieses
+
     # returns a pandas series
     def getColumnLabels(self):
         return self.database.columns.to_series()
