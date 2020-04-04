@@ -1,13 +1,23 @@
 {
-	"leftAxis": ["Column1"],
-	"leftAxisMax": 110,
-	"leftAxisMin": 0,
-	"rightAxis": ["Column2"],
-	"rightAxisMax": 1.0,
-	"rightAxisMin": 0
+	"primaryAxis": {
+		"max": 100,
+		"min": 0,
+		"interval": 10,
+		"columns": [
+			{"name": "Column1"}
+		]
+	},
+	"secondaryAxis": {
+		"max": 1.0,
+		"min": 0.0,
+		"interval": 0.1,
+		"columns": [
+			{"name": "Column2", "style": "dashed"}
+		]
+	}
 }
 Year,Column1,Column2
-10.1,10.1,0
+10.1,10.1,2.0
 20,40,0.2
 30,100,0.8
 40,80,0.15

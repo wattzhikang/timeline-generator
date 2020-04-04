@@ -137,18 +137,14 @@ for database in ganttData:
 ### Linear Data
 
 for database in linearData:
-    chart = plt.gcf().add_subplot(gdspec[chartIndex])
+    primary = plt.gcf().add_subplot(gdspec[chartIndex])
+    secondary = primary.twinx()
 
-    for series in database.leftSerieses():
-        chart.plot(database.allDates(), series)
-    
-    ax2 = chart.twinx()
+    for series in database.serieses:
+        chart = primary if series.isPrimary else secondary
+        style = "--" if series.isDashed else "-"
 
-    for series in database.rightSerieses():
-        ax2.plot(database.allDates(), series)
-
-    print(database.leftSerieses())
-    print(database.rightSerieses())
+        chart.plot(series.dates, series.data, linestyle=style)
     
     chartIndex += 1
 

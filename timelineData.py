@@ -22,6 +22,16 @@ class Event:
         self.date = date
         self.brief = brief
 
+#encapsulates a numerical data series. It's basically a data series
+#plus information on how to display it
+class Series:
+    def __init__(self, data, name, isPrimary, isDashed):
+        self.data = data
+        self.dates = data.index.to_series()
+        self.name = name
+        self.isPrimary = isPrimary
+        self.isDashed = isDashed
+
 # This class is meant for a csv file with one column of dates and one
 # or more columns of numerical data
 class Database:
@@ -49,53 +59,80 @@ class Database:
         # we're done with the file
         file.close()
 
-        # parse the json string, if it exists
-        if jsonStr != "":
-            jsonObj = json.loads(jsonStr)
-
-            # parse out which columns go on which axis
-            self.leftColumns = [ ]
-            self.rightColumns = [ ]
-            for column in self.database.columns:
-                if "rightAxis" in jsonObj and column in jsonObj["rightAxis"]:
-                    self.rightColumns.append(column)
-                else:
-                    self.leftColumns.append(column)
-
-            # parse out axis scales, if they exist
-            if "leftAxisMax" in jsonObj:
-                self.leftAxisMax = jsonObj["leftAxisMax"]
-            else:
-                self.leftAxisMax = None
-            if "leftAxisMin" in jsonObj:
-                self.leftAxisMin = jsonObj["leftAxisMin"]
-            else:
-                self.leftAxisMin = None
-            if "rightAxisMax" in jsonObj:
-                self.rightAxisMax = jsonObj["rightAxisMax"]
-            else:
-                self.rightAxisMax = None
-            if "rightAxisMin" in jsonObj:
-                self.rightAxisMin = jsonObj["rightAxisMin"]
-            else:
-                self.rightAxisMin = None
-        else:
-            self.leftColumns = self.database.columns
-            self.rightColumns = [ ]
+        self.parseSerieses(jsonStr)
     
     def getJSONString(self, file):
         if file.read(1) == "{":
-            file.seek(0,0)
-            str = ""
-            char = file.read(1)
-            while char != "}":
-                str += char
+            jsonStr = "{"
+
+            matchParenthases = 1
+            while matchParenthases > 0:
                 char = file.read(1)
-            str += char
-            return str
+                if char == "{":
+                    matchParenthases += 1
+                elif char == "}":
+                    matchParenthases -= 1
+                jsonStr += char
+            
+            return jsonStr
         else:
             file.seek(0,0)
             return ""
+
+    #fill out the series objects using optional json string
+    def parseSerieses(self, jsonStr):
+        self.serieses = [ ]
+        addedColumns = [ ] # to avoid duplication of series
+        if jsonStr != "":
+            jsonObj = json.loads(jsonStr)
+
+            if "primaryAxis" in jsonObj:
+                axSpec = jsonObj["primaryAxis"]
+
+                # first parse out axis specifications, if any
+                self.primaryMax = axSpec["max"] if "max" in axSpec else None
+                self.primaryMin = axSpec["max"] if "min" in axSpec else None
+                self.primaryInterval = axSpec["interval"] if "interval" in axSpec else None
+
+                # then parse out specifications for any mentioned columns
+                if "columns" in axSpec:
+                    for column in axSpec["columns"]:
+                        self.serieses.append(Series(
+                            self.database[column["name"]],
+                            column["name"], # this is not optional. You must name the column
+                            True,
+                            True if "style" in column and column["style"] == "dashed" else False
+                        ))
+                        addedColumns.append(column["name"])
+            else:
+                self.primaryMax, self.primaryMin, self.primaryInterval = None, None, None
+
+            if "secondaryAxis" in jsonObj:
+                axSpec = jsonObj["secondaryAxis"]
+                self.secondaryMax = axSpec["max"] if "max" in axSpec else None
+                self.secondaryMin = axSpec["max"] if "min" in axSpec else None
+                self.secondaryInterval = axSpec["interval"] if "interval" in axSpec else None
+                if "columns" in axSpec:
+                    for column in axSpec["columns"]:
+                        self.serieses.append(Series(
+                            self.database[column["name"]],
+                            column["name"],
+                            False,
+                            True if "style" in column and column["style"] == "dashed" else False
+                        ))
+                        addedColumns.append(column["name"])
+            else:
+                self.secondaryMax, self.secondaryMin, self.secondaryInterval = None, None, None
+        
+        for column in self.database.columns:
+            if column not in addedColumns:
+                self.serieses.append(Series(
+                    self.database[column],
+                    column,
+                    True,
+                    False
+                ))
+
 
     # This regex basically looks for a number that takes up an entire column. If a row has a number that
     # takes up an entire column, then the row probably isn't a header.
@@ -116,31 +153,10 @@ class Database:
     def allDates(self):
         return self.database.index.to_series()
     
-    # returns a pandas series
-    def serieses(self): #standard plural form
-        for column in self.database.columns:
-            yield self.database[column]
-
-    def leftSerieses(self):
-        serieses = []
-        for column in self.database.columns:
-            if column in self.leftColumns:
-                serieses.append(self.database[column])
-        return serieses
-    
-    def rightSerieses(self):
-        serieses = []
-        for column in self.database.columns:
-            if column in self.rightColumns:
-                serieses.append(self.database[column])
-        return serieses
-    
-    # returns a list of pandas serieses
-    def allSerieses(self):
-        retSerieses = []
-        for column in self.database.columns:
-            retSerieses.append(self.database[column])
-        return retSerieses
+    # return a Series object, which encapsulate a Pandas series
+    def seriesGenerator(self): #standard plural form
+        for series in self.serieses:
+            yield series
     
     # returns a pandas series
     def getColumnLabels(self):
