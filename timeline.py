@@ -192,6 +192,7 @@ for base in (ganttData + linearData + eventData):
     if maxDate == None or base.maxDate() > maxDate:
         maxDate = base.maxDate()
 
-plt.xlim(minDate, maxDate)
+for ax in plt.gcf().get_axes():
+    ax.set_xlim(minDate, maxDate)
 
 plt.show()
