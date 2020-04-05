@@ -84,7 +84,8 @@ if len(ganttData) != 0:
     heights = [ ]
     for database in ganttData:
         heights.append(database.maxOverlaps() / maxGantt)
-    heights = heights + ([ 1 ] * len(linearData + areaData + eventData))
+    heights = heights + ([ 1 ] * len(linearData + areaData))
+    heights = heights + ([0.5] * len(eventData))
 
     print(heights)
 else:
@@ -167,17 +168,25 @@ for database in eventData:
     chart = plt.gcf().add_subplot(gdspec[chartIndex])
 
     # create an array with the level of each label. There is probably a better way to do this
-    levels = numpy.tile([6, 5, 4, 3, 2, 1], int(numpy.ceil(database.numItems()/6)))[:database.numItems()]
+    levels = numpy.tile([2, 1], int(numpy.ceil(database.numItems()/2)))[:database.numItems()]
 
     markerline, stemline, baseline = chart.stem(database.allDates(), levels, use_line_collection=True)
 
     for event, level in zip(database.events(), levels):
-        chart.annotate(event.brief, xy=(event.date, level), xytext=(0,0), textcoords="offset points", va="top", ha="left")
+        chart.annotate(
+            event.brief,
+            xy=(event.date, level),
+            xytext=(0,0),
+            textcoords="offset points",
+            va="top", ha="left",
+            rotation_mode="anchor",
+            rotation=45
+        )
 
-    markerline.set_ydata(numpy.zeros(database.numItems()))
+    markerline.set_ydata(numpy.zeros(database.numItems())) #brings dots down to the bottom for clarity
+    chart.set_ylim(0,3) # give room for the text
 
     plt.setp(baseline, visible=False)
-
     chart.get_yaxis().set_visible(False)
 
     chartIndex += 1
