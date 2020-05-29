@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy
 
 from timelineData import *
+from colorGenerator import ColorGenerator
 
 ### Set up the Argument Parser to retrieve arguments from the user
 
@@ -112,7 +113,7 @@ for database in ganttData:
     for dash in database.dashes():
         placed = False
         for stack in dashStacks: # look for the first stack the dash can be placed in
-            if len(stack) < 1 or stack[len(stack) - 1].end < dash.start:
+            if len(stack) < 1 or stack[len(stack) - 1].end <= dash.start:
                 stack.append(dash)
                 placed = True
                 break
@@ -129,9 +130,9 @@ for database in ganttData:
     chart.grid(axis="x")
 
     for stack, level in zip(dashStacks, range(len(dashStacks))): # zip this with a random color object, don't worry, zip only uses shortest
-        for dash in stack:
-            chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9))
-            chart.text(dash.start + (dash.duration() / 2), 10 * level + 3, dash.name)
+        for dash, hue in zip(stack, ColorGenerator()):
+            chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9), color=hue)
+            chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name)
     
     chartIndex += 1
 
