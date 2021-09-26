@@ -35,6 +35,12 @@ class Series:
 # This class is meant for a csv file with one column of dates and one
 # or more columns of numerical data
 class Database:
+    """This class is meant for a CSV file with one column of dates and one or more columns of numerical data
+
+    :param filename: The name of the file that contains the data
+    :type filename: str
+    
+    """
     def __init__(self, filename):
         self.createDatabase(filename)
 

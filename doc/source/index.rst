@@ -10,6 +10,7 @@ Welcome to Timeline Generator's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   ./database
 
 
 Indices and tables
