@@ -1,30 +1,62 @@
 import re
+import typing
 import pandas
 import numpy
 import json
 
-# Simple struct used for iteration in building the Gantt Chart
 class Dash:
+    """Simple struct used for iteration in building the Gantt Chart
+    
+    :cvar str name: The name of this task
+    :cvar float start: The start date of this task
+    :cvar float end: The end date of this task
+    """
     def __init__(self, name, start, end):
         self.name = name
         self.start = start
         self.end = end
     
-    def duration(self):
+    def duration(self) -> float:
+        """The duration of this task
+
+        Determined by subtracting the start from the end dates
+
+        :return: The duration of this task
+        :rtype: float
+        """
         return self.end - self.start
 
     def __repr__(self):
+        """The string representation of this object
+
+        "{self.name}, started {self.end}, ended {self.end}"
+
+        :return: A string representing this object
+        :rtype: str
+        """
         return f"{self.name}, started {self.end}, ended {self.end}"
 
-# Simple struct used for iteration in building the Gantt Chart
 class Event:
+    """Simple struct used for iteration in building the Gantt Chart
+
+    :cvar float date: The date of this event
+    :cvar str brief: A (brief) description of the event. The event's label
+    """
     def __init__(self, date, brief):
         self.date = date
         self.brief = brief
 
-#encapsulates a numerical data series. It's basically a data series
-#plus information on how to display it
 class Series:
+    """Encapsulates a numerical data series.
+    
+    It's basically a data series plus information on how to display it
+
+    :cvar Pandas.Series data: The Pandas Series representation of the data
+    :cvar Pandas.Series dates: The dates. Basically the index of the data
+    :cvar str name: The name of the series
+    :cvar boolean isPrimary: Indicates whether or not the data should be plotted against the primary or secondary axis
+    :cvar boolean isDashed: Indicates whether or not the data should be drawn with the dashed line
+    """
     def __init__(self, data, name, isPrimary, isDashed):
         self.data = data
         self.dates = data.index.to_series()
@@ -39,7 +71,6 @@ class Database:
 
     :param filename: The name of the file that contains the data
     :type filename: str
-    
     """
     def __init__(self, filename):
         self.createDatabase(filename)
@@ -146,76 +177,156 @@ class Database:
     def isHeader(self, line):
         return self.headerRegex.search(line) == None
     
-    def numItems(self):
+    def numItems(self) -> int:
+        """Return the number of data points
+
+        :return: The number of data points
+        :rtype: int
+        """
         return len(self.database.index)
     
-    def minDate(self):
+    def minDate(self) -> float:
+        """Returns the earliest date in the database
+
+        :return: The earliest date in the database
+        :rtype: float
+        """
         return self.database.index.min()
     
-    def maxDate(self):
+    def maxDate(self) -> float:
+        """Returns the latest date in the database
+
+        :return: The latest date in the database
+        :rtype: float
+        """
         return self.database.index.max()
     
-    # returns a pandas series
-    def allDates(self):
+    def allDates(self) -> pandas.Series:
+        """Return a Pandas series of all the dates
+        
+        :return: A series of all the dates
+        :rtype: A Pandas series
+        """
         return self.database.index.to_series()
     
     # return a Series object, which encapsulate a Pandas series
-    def seriesGenerator(self): #standard plural form
+    def seriesGenerator(self) -> Series: #standard plural form
+        """A generator that yields all the serieses in this database
+
+        :return: A Series that encapsulates a Pandas series
+        :rtype: Series
+        """
         for series in self.serieses:
             yield series
 
-    def allSerieses(self):
+    def allSerieses(self) -> typing.List[Series]:
+        """``seriesGenerator()``, but not a generator
+
+        :return: All the Serieses in the database
+        :rtype: list[Series]
+        """
         retSerieses = []
         for column in self.database.columns:
             retSerieses.append(self.database[column])
         return retSerieses
 
     # returns a pandas series
-    def getColumnLabels(self):
+    def getColumnLabels(self) -> pandas.Series:
+        """Return all the column labels
+
+        :return: The labels for all the columns in the database
+        :rtype: A Pandas Series
+        """
         return self.database.columns.to_series()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Return the string representation of this database.
+
+        :return: The string representation of the internal Pandas database
+        :rtype: str
+        """
         return repr(self.database)
 
 class GanttDatabase(Database):
+    """A database for Gantt data
+    
+    """
     def __init__(self, filename):
         self.createDatabase(filename, hasIndexColumn=False, columnLabels=["name","start","end"])
         self.database.sort_values(by="start", inplace=True, ignore_index=True) # it's useful to have it sorted this way
     
-    # defined as the start date of the first task
-    def minDate(self):
+    def minDate(self) -> float:
+        """Get the earliest date on the chart
+        
+        Get the start date of the first task
+
+        :return: Start date of first task
+        :rtype: float
+        """
         return self.minStartDate()
     
-    # defined as the end date of the last task to be finished
-    # when these two methods are defined this way, you can use them to get a range for a chart
-    def maxDate(self):
+    def maxDate(self) -> float:
+        """Get the latest date on the chart
+
+        Get the end date of the last task to be finished
+
+        When these two methods are defined this way, you can use them to get a range for a chart
+
+        :return: End date of the last task
+        :rtype: float
+        """
         return self.maxEndDate()
     
-    # start date of the first task
-    def minStartDate(self):
+    def minStartDate(self) -> float:
+        """Get the start date of the first task to be started
+
+        :return: Start date of first task
+        :rtype: float
+        """
         return self.database["start"].min()
     
-    # start date of task started last
-    def maxStartDate(self):
+    def maxStartDate(self) -> float:
+        """Get the start date of the last task *to be started*
+
+        :return: Start date of the last task to be started
+        :rtype: float
+        """
         return self.database["start"].max()
     
-    # end date of earliest task to be finished
-    def minEndDate(self):
+    def minEndDate(self) -> float:
+        """Get the end date of the first task to end
+
+        :return: The end date of the first task to end
+        :rtype: float
+        """
         return self.database["end"].min()
     
-    # end date of last task to be finished
-    def maxEndDate(self):
+    def maxEndDate(self) -> float:
+        """Get the end date of the last task to end
+
+        :return: The end date of the last task to end
+        :rtype: float
+        """
         return self.database["end"].max()
     
-    # returns all the dashes in this database
-    def dashes(self):
+    def dashes(self) -> Dash:
+        """Yield all the dashes in this collection
+
+        :return: A dash
+        :rtype: Iterator[:class:`Dash`]
+        """
         for record in self.database.itertuples():
             yield Dash(record.name, record.start, record.end)
     
     # a naive approach requiring O(n^2) time and O(n) space
     # but unless you have thousands of people, it isn't worth
     # the time to build a tree
-    def maxOverlaps(self):
+    def maxOverlaps(self) -> int:
+        """Gets the maximum number of tasks that take place at the same time
+
+        :return: The maximum number of tasks that take place at the same time
+        :rtype: int
+        """
         maximum = 0
         currentOverlaps = numpy.array( [ ] ) # end points
         for dash in self.dashes():
@@ -225,21 +336,45 @@ class GanttDatabase(Database):
         return maximum
 
 class EventDatabase(Database):
+    """A collection of events.
+
+    Events are just labeled points in time
+    """
     def __init__(self, filename):
         # because there may be multiple events on the same date, DO NOT take the date column
         # as the index
         self.createDatabase(filename, hasIndexColumn=False, columnLabels=["date","brief"])
     
-    def minDate(self):
+    def minDate(self) -> float:
+        """The date of the earliest event
+
+        :rtype: float
+        """
         return self.database["date"].min()
     
-    def maxDate(self):
+    def maxDate(self) -> float:
+        """The date of the latest event
+
+        :rtype: float
+        """
         return self.database["date"].max()
     
     # since the date column can't be the index, return the date column itself
-    def allDates(self):
+    def allDates(self) -> pandas.Series:
+        """Return all the dates in the collection
+
+        since the date column can't be the index, return the date column itself
+
+        :return: All the dates in the collection
+        :rtype: A Pandas series?
+        """
         return self.database["date"]
     
-    def events(self):
+    def events(self) -> Event:
+        """A generator with returns all the events in the collection
+
+        :return: Every event in the collection
+        :rtype: Iterator[:class:`Event`]
+        """
         for record in self.database.itertuples():
             yield Event(record.date, record.brief)
