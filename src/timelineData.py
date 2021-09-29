@@ -11,7 +11,7 @@ class Dash:
     :cvar float start: The start date of this task
     :cvar float end: The end date of this task
     """
-    def __init__(self, name, start, end):
+    def __init__(self, name: str, start: float, end: float):
         self.name = name
         self.start = start
         self.end = end
@@ -26,7 +26,7 @@ class Dash:
         """
         return self.end - self.start
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """The string representation of this object
 
         "{self.name}, started {self.end}, ended {self.end}"
@@ -42,7 +42,7 @@ class Event:
     :cvar float date: The date of this event
     :cvar str brief: A (brief) description of the event. The event's label
     """
-    def __init__(self, date, brief):
+    def __init__(self, date: float, brief: str):
         self.date = date
         self.brief = brief
 
@@ -57,7 +57,7 @@ class Series:
     :cvar boolean isPrimary: Indicates whether or not the data should be plotted against the primary or secondary axis
     :cvar boolean isDashed: Indicates whether or not the data should be drawn with the dashed line
     """
-    def __init__(self, data, name, isPrimary, isDashed):
+    def __init__(self, data: pandas.Series, name: str, isPrimary: bool, isDashed: bool):
         self.data = data
         self.dates = data.index.to_series()
         self.name = name
@@ -72,10 +72,10 @@ class Database:
     :param filename: The name of the file that contains the data
     :type filename: str
     """
-    def __init__(self, filename):
+    def __init__(self, filename: str):
         self.createDatabase(filename)
 
-    def createDatabase(self, filename, hasIndexColumn=True, columnLabels=None):
+    def createDatabase(self, filename: str, hasIndexColumn: bool=True, columnLabels=None):
         file = open(filename, "r")
 
         # these methods mess with the file read head, be careful in changing them
