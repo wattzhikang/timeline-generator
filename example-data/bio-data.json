@@ -1,0 +1,68 @@
+{
+    "start": -15.0,
+    "end": 100.0,
+    "charts" : [
+        {
+            "type": "gantt",
+            "title": "Biographical Data",
+            "data": [
+                {
+                    "label": "Jane Smith",
+                    "start": -13.14,
+                    "end": 50.6
+                },
+                {
+                    "label": "Archie Smith",
+                    "start": 10.9,
+                    "end": 98.6
+                }
+            ]
+        },
+        {
+            "type": "event",
+            "title": "Events",
+            "data": [
+                {
+                    "label": "The Great Happening",
+                    "date": -30
+                },
+                {
+                    "label": "The Boring TImes",
+                    "date": -20
+                },
+                {
+                    "label": "The Gathering",
+                    "date": 30
+                },
+                {
+                    "label": "The Quickening",
+                    "date": 35
+                }
+            ]
+        },
+        {
+            "type": "area",
+            "title": "Numerical Data",
+            "data": [
+                {
+                    "title": "Series 0",
+                    "entries": [
+                        {"value": 7.825, "date": -10.4},
+                        {"value": 14.21, "date": 20.6},
+                        {"value": 28.6, "date": 50.1},
+                        {"value": 56.98, "date": 70}
+                    ]
+                }
+                {
+                    "title": "Series 1",
+                    "entries": [
+                        {"value": 100.6, "date": -10.4},
+                        {"value": 70.9, "date": 20.6},
+                        {"value": 70.7, "date": 50.1},
+                        {"value": 12.6, "date": 70}
+                    ]
+                }
+            ]
+        }
+    ]
+}

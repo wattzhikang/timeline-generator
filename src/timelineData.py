@@ -58,8 +58,16 @@ class Series:
     :cvar boolean isDashed: Indicates whether or not the data should be drawn with the dashed line
     """
     def __init__(self, data: pandas.Series, name: str, isPrimary: bool, isDashed: bool):
-        self.data = data
-        self.dates = data.index.to_series()
+        # self.data = data #Pandas
+        # self.dates = data.index.to_series() #Pandas index
+
+        self.data = [ ]
+        self.dates = [ ]
+
+        for index, value in data.items():
+            self.data.append(value)
+            self.dates.append(index)
+
         self.name = name
         self.isPrimary = isPrimary
         self.isDashed = isDashed
@@ -199,15 +207,20 @@ class Database:
         :return: The latest date in the database
         :rtype: float
         """
-        return self.database.index.max()
+        return self.database.index.max() #Pandas
     
-    def allDates(self) -> pandas.Series:
+    def allDates(self) -> typing.List[float]:
         """Return a Pandas series of all the dates
         
         :return: A series of all the dates
         :rtype: A Pandas series
         """
-        return self.database.index.to_series()
+
+        dates = [ ]
+        for index, value in self.database.index.to_series().items():
+            dates.append(value)
+
+        return dates
     
     # return a Series object, which encapsulate a Pandas series
     def seriesGenerator(self) -> Series: #standard plural form
@@ -231,13 +244,18 @@ class Database:
         return retSerieses
 
     # returns a pandas series
-    def getColumnLabels(self) -> pandas.Series:
+    def getColumnLabels(self) -> typing.List[str]:
         """Return all the column labels
 
         :return: The labels for all the columns in the database
         :rtype: A Pandas Series
         """
-        return self.database.columns.to_series()
+        
+        labels = [ ]
+        for index, value in self.database.columns.to_series().items():
+            labels.append(value)
+
+        return labels
 
     def __repr__(self) -> str:
         """Return the string representation of this database.
@@ -368,7 +386,12 @@ class EventDatabase(Database):
         :return: All the dates in the collection
         :rtype: A Pandas series?
         """
-        return self.database["date"]
+
+        dates = [ ]
+        for index, value in self.database['date'].items():
+            dates.append(value)
+
+        return dates
     
     def events(self) -> Event:
         """A generator with returns all the events in the collection
