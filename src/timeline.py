@@ -1,6 +1,7 @@
 import argparse
 import matplotlib.pyplot as plt
 import numpy
+import json
 
 from timelineData import *
 from colorGenerator import ColorGenerator
@@ -114,7 +115,13 @@ for database in linearData:
         chart.plot(series.dates, series.data, label=series.name, linestyle=style)
     
     primary.legend(loc=2)
+    if database.primaryAxis is not None:
+        primary.set_ylim(bottom=database.primaryAxis.min, top=database.primaryAxis.max)
     secondary.legend(loc=1)
+    if database.secondaryAxis is not None:
+        print(f'max: {database.secondaryAxis.max}')
+        print(f'min: {database.secondaryAxis.min}')
+        secondary.set_ylim(bottom=database.secondaryAxis.min, top=database.secondaryAxis.max)
 
     chartIndex += 1
 

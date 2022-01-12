@@ -1,9 +1,5 @@
-from os import SEEK_DATA
-import re
 import typing
-import pandas
 import numpy
-import json
 
 class Dash:
     """Simple struct used for iteration in building the Gantt Chart
@@ -68,6 +64,18 @@ class Series:
         self.isPrimary = isPrimary
         self.isDashed = isDashed
 
+class Axis:
+    """Represents an axis
+    
+    :cvar max: The maximum value on the axis
+    :cvar min: The minimum value on the axis
+    :cvar interval: The interval of the axis
+    """
+    def __init__(self, max: float, min: float, interval: float) -> None:
+        self.max = max
+        self.min = min
+        self.interval = interval
+
 # This class is meant for a csv file with one column of dates and one
 # or more columns of numerical data
 class Database:
@@ -83,6 +91,22 @@ class Database:
         self.title = chartJSON['title']
 
         self.serieses = [ ]
+
+        self.primaryAxis = None
+        if 'primaryAxis' in chartJSON:
+            maximum = chartJSON['primaryAxis']['max']
+            minimum = chartJSON['primaryAxis']['min']
+            interval = chartJSON['primaryAxis']['interval']
+            print(f'max: {maximum}')
+            print(f'min: {minimum}')
+            self.primaryAxis = Axis(maximum, minimum, interval)
+        
+        self.secondaryAxis = None
+        if 'secondaryAxis' in chartJSON:
+            maximum = chartJSON['secondaryAxis']['max']
+            minimum = chartJSON['secondaryAxis']['min']
+            interval = chartJSON['secondaryAxis']['interval']
+            self.secondaryAxis = Axis(maximum, minimum, interval)
 
         for series in chartJSON['data']:
             data = [ ]
