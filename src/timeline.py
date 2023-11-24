@@ -143,7 +143,7 @@ for database in eventData:
     # create an array with the level of each label. There is probably a better way to do this
     levels = numpy.tile([2, 1], int(numpy.ceil(len(database)/2)))[:len(database)]
 
-    markerline, stemline, baseline = chart.stem(database.dates, levels, use_line_collection=True)
+    markerline, stemline, baseline = chart.stem(database.dates, levels)
 
     for event, level in zip(database.events, levels):
         chart.annotate(
