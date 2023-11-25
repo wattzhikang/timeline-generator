@@ -8,10 +8,11 @@ class Dash:
     :cvar float start: The start date of this task
     :cvar float end: The end date of this task
     """
-    def __init__(self, name: str, start: float, end: float):
+    def __init__(self, name: str, start: float, end: float, column: int = None):
         self.name = name
         self.start = start
         self.end = end
+        self.column = column
     
     def duration(self) -> float:
         """The duration of this task
@@ -207,8 +208,11 @@ class GanttDatabase:
             name = dashJSON['label']
             start = dashJSON['start']
             end = dashJSON['end']
+            column = None
+            if 'column' in dashJSON:
+                column = dashJSON['column']
 
-            dash = Dash(name, start, end)
+            dash = Dash(name, start, end, column)
 
             if self.minStartDate is None or start < self.minStartDate:
                 self.minStartDate = start
@@ -224,6 +228,8 @@ class GanttDatabase:
 
         self.minDate = self.minStartDate
         self.maxDate = self.maxEndDate
+
+        self.computeMaxOverlaps()
     
     def dashes(self) -> Dash:
         """Yield all the dashes in this collection
@@ -233,23 +239,68 @@ class GanttDatabase:
         """
         for dash in self.dashes:
             yield dash
-    
-    # a naive approach requiring O(n^2) time and O(n) space
-    # but unless you have thousands of people, it isn't worth
-    # the time to build a tree
-    def maxOverlaps(self) -> int:
-        """Gets the maximum number of tasks that take place at the same time
 
-        :return: The maximum number of tasks that take place at the same time
-        :rtype: int
-        """
-        maximum = 0
-        currentOverlaps = numpy.array( [ ] ) # end points
-        for dash in self.dashes:
-            currentOverlaps = currentOverlaps[currentOverlaps >= dash.start]
-            currentOverlaps = numpy.append(currentOverlaps, dash.end)
-            maximum = max(maximum, len(currentOverlaps))
-        return maximum
+    def computeMaxOverlaps(self):
+        # copy list of dashes and sort by start property
+        starts = self.dashes[:]
+        starts.sort(key = lambda dash : dash.start)
+
+        # copy list of dashes and sort by end property
+        ends = self.dashes[:]
+        ends.sort(key = lambda dash : dash.end)
+
+        self.maxOverlaps = 0
+
+        # Users are allowed to make their own mistakes by putting overlapping
+        # dashes in the same column. Therefore, we need to separately track
+        # dashes that are specified for a particular column and dashes that
+        # can be placed in any column.
+        colCounts = { }
+        occupiedDedicatedColumns = 0
+        otherDashesInPlay = 0
+
+        nextStart = 0
+        nextEnd = 0
+        while nextStart < len(starts) and nextEnd < len(ends):
+            # if a dash is starting
+            if starts[nextStart].start < ends[nextEnd].end:
+                # if a dash starts before the other dash(es) end,
+                # then there is an overlap
+
+                # if the dash is specified for a particular column,
+                # then we track the number of dashes in that column,
+                # and also the total number of dashes in all columns
+                if starts[nextStart].column is not None:
+                    # in case we haven't seen this particular column
+                    # before, we need to initialize it
+                    if starts[nextStart].column not in colCounts:
+                        colCounts[starts[nextStart].column] = 0
+                    
+                    # if this is the first dash in this column,
+                    # then we need to increment the number of occupied
+                    # columns
+                    if colCounts[starts[nextStart].column] == 0:
+                        occupiedDedicatedColumns += 1
+                    
+                    # track the number of dashes in this column
+                    colCounts[starts[nextStart].column] += 1
+                else:
+                    otherDashesInPlay += 1
+                
+                self.maxOverlaps = max(self.maxOverlaps, occupiedDedicatedColumns + otherDashesInPlay)
+                nextStart += 1
+            # otherwise, if a dash is ending
+            else:
+                if ends[nextEnd].column is not None:
+                    # decrement the number of dashes in this column
+                    colCounts[ends[nextEnd].column] -= 1
+                    if colCounts[ends[nextEnd].column] == 0:
+                        # if this is the last dash in this column,
+                        # then this column is now free
+                        occupiedDedicatedColumns -= 1
+                else:
+                    otherDashesInPlay -= 1
+                nextEnd += 1
 
 class EventDatabase:
     """A collection of events.

@@ -47,10 +47,10 @@ from matplotlib import gridspec
 
 if len(ganttData) != 0:
 # calculate height ratios for the plots, shrinking gantt plots with fewer elements
-    maxGantt = max(ganttData, key= lambda database : database.maxOverlaps()).maxOverlaps()
+    maxGantt = max(ganttData, key= lambda database : database.maxOverlaps).maxOverlaps
     heights = [ ]
     for database in ganttData:
-        heights.append(database.maxOverlaps() / maxGantt)
+        heights.append(database.maxOverlaps / maxGantt)
     heights = heights + ([ 1 ] * len(linearData + areaData))
     heights = heights + ([0.5] * len(eventData))
 
