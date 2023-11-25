@@ -104,7 +104,12 @@ for database in ganttData:
     for stack, level in zip(dashStacks, range(len(dashStacks))): # zip this with a random color object, don't worry, zip only uses shortest
         for dash, hue in zip(stack, ColorGenerator()):
             chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9), color=hue)
-            chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name)
+            if dataFileJSON['start'] is not None and dash.start > dataFileJSON['start']:
+                chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name)
+            else:
+                # otherwise the text will be off the chart
+                # so place the text at the beginning of the chart, and not the beginning of the dash
+                chart.text(dataFileJSON['start'], 10 * level + 3, dash.name)
     
     chartIndex += 1
 
