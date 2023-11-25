@@ -77,14 +77,20 @@ for database in ganttData:
 
     # simple greedy algorithm for stacking gantt dashes
     for dash in database.dashes:
-        placed = False
-        for stack in dashStacks: # look for the first stack the dash can be placed in
-            if len(stack) < 1 or stack[len(stack) - 1].end <= dash.start:
-                stack.append(dash)
-                placed = True
-                break
-        if not placed: # if it still hasn't been placed, create a new stack for it
-            dashStacks.append([dash])
+        if dash.column != None: # if a column is specified, place it in that column
+            # if the column doesn't exist, create it by adding empty stacks
+            while len(dashStacks) < dash.column + 1:
+                dashStacks.append([ ])
+            dashStacks[dash.column].append(dash)
+        else: # otherwise, place it in the first available stack
+            placed = False
+            for stack in dashStacks: # look for the first stack the dash can be placed in
+                if len(stack) < 1 or stack[len(stack) - 1].end <= dash.start:
+                    stack.append(dash)
+                    placed = True
+                    break
+            if not placed: # if it still hasn't been placed, create a new stack for it
+                dashStacks.append([dash])
     
     dashStacks.reverse() # cosmetic
 
