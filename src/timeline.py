@@ -174,12 +174,21 @@ for database in eventData:
 
 minDate, maxDate = None, None
 
-for base in (ganttData + linearData + eventData):
-    print(base)
-    if minDate == None or base.minDate < minDate:
-        minDate = base.minDate
-    if maxDate == None or base.maxDate > maxDate:
-        maxDate = base.maxDate
+# if the chart description does not manually specify a date range, use the min and max dates from the data
+# otherwise, use the specified range
+if dataFileJSON['start'] is None or dataFileJSON['end'] is None:
+    for base in (ganttData + linearData + eventData):
+        print(base)
+        if minDate == None or base.minDate < minDate:
+            minDate = base.minDate
+        if maxDate == None or base.maxDate > maxDate:
+            maxDate = base.maxDate
+
+if dataFileJSON['start'] is not None:
+    minDate = dataFileJSON['start']
+
+if dataFileJSON['end'] is not None:
+    maxDate = dataFileJSON['end']
 
 for ax in plt.gcf().get_axes():
     ax.set_xlim(minDate, maxDate)
