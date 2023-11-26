@@ -85,7 +85,7 @@ for database in ganttData:
         else: # otherwise, place it in the first available stack
             placed = False
             for stack in dashStacks: # look for the first stack the dash can be placed in
-                if len(stack) < 1 or stack[len(stack) - 1].end <= dash.start:
+                if len(stack) < 1 or stack[len(stack) - 1].maxEnd <= dash.start:
                     stack.append(dash)
                     placed = True
                     break
@@ -102,8 +102,12 @@ for database in ganttData:
     chart.grid(axis="x")
 
     for stack, level in zip(dashStacks, range(len(dashStacks))): # zip this with a random color object, don't worry, zip only uses shortest
-        for dash, hue in zip(stack, ColorGenerator()):
+        for dash, (hue, lighterHue) in zip(stack, ColorGenerator()):
             chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9), color=hue)
+            if dash.extendTo is not None:
+                # If this dash is to be extended, put another dash at the end of this dash
+                # that has a dashed line border, and that lighter color as the fill
+                chart.broken_barh([(dash.end, dash.extendedDuration())], (10 * level, 9), color=lighterHue, linestyle="--")
             if dataFileJSON['start'] is not None and dash.start > dataFileJSON['start']:
                 chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name)
             else:
@@ -181,7 +185,7 @@ minDate, maxDate = None, None
 
 # if the chart description does not manually specify a date range, use the min and max dates from the data
 # otherwise, use the specified range
-if dataFileJSON['start'] is None or dataFileJSON['end'] is None:
+if 'start' not in dataFileJSON or 'end' not in dataFileJSON:
     for base in (ganttData + linearData + eventData):
         print(base)
         if minDate == None or base.minDate < minDate:
@@ -189,13 +193,23 @@ if dataFileJSON['start'] is None or dataFileJSON['end'] is None:
         if maxDate == None or base.maxDate > maxDate:
             maxDate = base.maxDate
 
-if dataFileJSON['start'] is not None:
+if 'start' in dataFileJSON:
     minDate = dataFileJSON['start']
 
-if dataFileJSON['end'] is not None:
+if 'end' in dataFileJSON:
     maxDate = dataFileJSON['end']
 
 for ax in plt.gcf().get_axes():
     ax.set_xlim(minDate, maxDate)
+
+# users can specify a year interval for ticks
+# set the ticks for every chart
+if 'majorInterval' in dataFileJSON:
+    for ax in plt.gcf().get_axes():
+        ax.xaxis.set_major_locator(plt.MultipleLocator(dataFileJSON['majorInterval']))
+
+if 'minorInterval' in dataFileJSON:
+    for ax in plt.gcf().get_axes():
+        ax.xaxis.set_minor_locator(plt.MultipleLocator(dataFileJSON['minorInterval']))
 
 plt.show()

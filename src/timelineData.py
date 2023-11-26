@@ -8,11 +8,17 @@ class Dash:
     :cvar float start: The start date of this task
     :cvar float end: The end date of this task
     """
-    def __init__(self, name: str, start: float, end: float, column: int = None):
+    def __init__(self, name: str, start: float, end: float, extendTo: int=None, column: int = None):
         self.name = name
         self.start = start
         self.end = end
         self.column = column
+        self.extendTo = extendTo
+
+        if extendTo is not None:
+            self.maxEnd = extendTo
+        else:
+            self.maxEnd = end
     
     def duration(self) -> float:
         """The duration of this task
@@ -23,6 +29,19 @@ class Dash:
         :rtype: float
         """
         return self.end - self.start
+
+    def extendedDuration(self) -> float:
+        """The duration of this dash from the defined end to the extended end
+
+        Determined by subtracting the defined end from the extended end dates
+
+        :return: The duration of this dash from the defined end to the extended end
+        :rtype: float
+        """
+        if self.extendTo is None:
+            return 0
+        else:
+            return self.maxEnd - self.end
 
     def __repr__(self) -> str:
         """The string representation of this object
@@ -208,20 +227,23 @@ class GanttDatabase:
             name = dashJSON['label']
             start = dashJSON['start']
             end = dashJSON['end']
+            extendTo = None
+            if 'extendTo' in dashJSON:
+                extendTo = dashJSON['extendTo']
             column = None
             if 'column' in dashJSON:
                 column = dashJSON['column']
 
-            dash = Dash(name, start, end, column)
+            dash = Dash(name, start, end, extendTo=extendTo, column=column)
 
-            if self.minStartDate is None or start < self.minStartDate:
-                self.minStartDate = start
-            if self.maxStartDate is  None or self.maxStartDate < start:
-                self.maxStartDate = start
-            if self.minEndDate is None or end < self.minEndDate:
-                self.minEndDate = end
-            if self.maxEndDate is None or self.maxEndDate < end:
-                self.maxEndDate = end
+            if self.minStartDate is None or dash.start < self.minStartDate:
+                self.minStartDate = dash.start
+            if self.maxStartDate is  None or self.maxStartDate < dash.start:
+                self.maxStartDate = dash.start
+            if self.minEndDate is None or dash.maxEnd < self.minEndDate:
+                self.minEndDate = dash.maxEnd
+            if self.maxEndDate is None or self.maxEndDate < dash.maxEnd:
+                self.maxEndDate = dash.maxEnd
 
             self.dashes.append(dash)
         self.dashes.sort(key = lambda dash : dash.start)
@@ -247,7 +269,7 @@ class GanttDatabase:
 
         # copy list of dashes and sort by end property
         ends = self.dashes[:]
-        ends.sort(key = lambda dash : dash.end)
+        ends.sort(key = lambda dash : dash.maxEnd)
 
         self.maxOverlaps = 0
 
@@ -263,7 +285,7 @@ class GanttDatabase:
         nextEnd = 0
         while nextStart < len(starts) and nextEnd < len(ends):
             # if a dash is starting
-            if starts[nextStart].start < ends[nextEnd].end:
+            if starts[nextStart].start < ends[nextEnd].maxEnd:
                 # if a dash starts before the other dash(es) end,
                 # then there is an overlap
 
