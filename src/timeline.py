@@ -6,68 +6,10 @@ import json
 from timelineData import *
 from colorGenerator import ColorGenerator
 
-### Set up the Argument Parser to retrieve arguments from the user
-
-parser = argparse.ArgumentParser(
-    description="A simple python tool for creating time-based charts based on multiple types of data"
-)
-parser.add_argument(
-    nargs=1,
-    help='Data file',
-    dest='dataFilePath',
-    metavar='data.json'
-)
-
-dataFilePath = parser.parse_args().dataFilePath[0]
-
-### Construct database objects
-
-dataFile = open(dataFilePath)
-dataFileJSON = json.load(dataFile)
-
-ganttData = [ ]
-linearData = [ ]
-areaData = [ ]
-eventData = [ ]
-for chart in dataFileJSON['charts']:
-    print(type(chart))
-    if chart['type'] == 'gantt':
-        ganttData.append(GanttDatabase(chart))
-    elif chart['type'] == 'event':
-        eventData.append(EventDatabase(chart))
-    elif chart['type'] == 'linear':
-        linearData.append(Database(chart))
-    elif chart['type'] == 'area':
-        areaData.append(Database(chart))
-
-### Get applicable subplots
-
-import matplotlib.pyplot as plt
-from matplotlib import gridspec
-
-if len(ganttData) != 0:
-# calculate height ratios for the plots, shrinking gantt plots with fewer elements
-    maxGantt = max(ganttData, key= lambda database : database.maxOverlaps).maxOverlaps
-    heights = [ ]
-    for database in ganttData:
-        heights.append(database.maxOverlaps / maxGantt)
-    heights = heights + ([ 1 ] * len(linearData + areaData))
-    heights = heights + ([0.5] * len(eventData))
-
-    print(heights)
-else:
-    heights = numpy.repeat(1.0, len(ganttData + linearData + areaData + eventData))
-
-gdspec = gridspec.GridSpec(len(ganttData + linearData + areaData + eventData), 1, height_ratios=heights)
-
-
-
-# running index for charts
-chartIndex = 0
-
 ### Biographical information
 
-for database in ganttData:
+# for database in ganttData:
+def ganttChart(database: GanttDatabase, chartIndex: int):
 
     ## Organize and sort biographical information
 
@@ -114,12 +56,11 @@ for database in ganttData:
                 # otherwise the text will be off the chart
                 # so place the text at the beginning of the chart, and not the beginning of the dash
                 chart.text(dataFileJSON['start'], 10 * level + 3, dash.name, rotation=30)
-    
-    chartIndex += 1
 
 ### Linear Data
 
-for database in linearData:
+# for database in linearData:
+def linearChart(database: Database, chartIndex: int):
     primary = plt.gcf().add_subplot(gdspec[chartIndex])
     secondary = primary.twinx()
 
@@ -138,21 +79,19 @@ for database in linearData:
         print(f'min: {database.secondaryAxis.min}')
         secondary.set_ylim(bottom=database.secondaryAxis.min, top=database.secondaryAxis.max)
 
-    chartIndex += 1
-
 ### Area Data
 
-for database in areaData:
+# for database in areaData:
+def areaChart(database: Database, chartIndex: int):
     chart = plt.gcf().add_subplot(gdspec[chartIndex])
 
     chart.stackplot(database.allDates(), database.allValues(), labels=database.getColumnLabels())
     chart.legend()
 
-    chartIndex += 1
-
 ### Event Data
 
-for database in eventData:
+# for database in eventData:
+def eventChart(database: EventDatabase, chartIndex: int):
     chart = plt.gcf().add_subplot(gdspec[chartIndex])
 
     # create an array with the level of each label. There is probably a better way to do this
@@ -177,6 +116,87 @@ for database in eventData:
     plt.setp(baseline, visible=False)
     chart.get_yaxis().set_visible(False)
 
+### Set up the Argument Parser to retrieve arguments from the user
+
+parser = argparse.ArgumentParser(
+    description="A simple python tool for creating time-based charts based on multiple types of data"
+)
+parser.add_argument(
+    nargs=1,
+    help='Data file',
+    dest='dataFilePath',
+    metavar='data.json'
+)
+
+dataFilePath = parser.parse_args().dataFilePath[0]
+
+### Construct database objects
+
+dataFile = open(dataFilePath)
+dataFileJSON = json.load(dataFile)
+
+databases = [ ]
+ganttData = [ ]
+linearData = [ ]
+areaData = [ ]
+eventData = [ ]
+for chart in dataFileJSON['charts']:
+    print(type(chart))
+    if chart['type'] == 'gantt':
+        databases.append(GanttDatabase(chart))
+        ganttData.append(databases[len(databases) - 1])
+    elif chart['type'] == 'event':
+        databases.append(EventDatabase(chart))
+        eventData.append(databases[len(databases) - 1])
+    elif chart['type'] == 'linear':
+        databases.append(Database(chart))
+        linearData.append(databases[len(databases) - 1])
+    elif chart['type'] == 'area':
+        databases.append(Database(chart))
+        areaData.append(databases[len(databases) - 1])
+
+### Get applicable subplots
+
+import matplotlib.pyplot as plt
+from matplotlib import gridspec
+
+# calculate height ratios for the plots, shrinking gantt plots with fewer elements
+heights = [ ]
+
+# Get the maximum number of overlaps for all gantt charts
+# and use that to scale the height of the gantt charts
+maxGantt = 1
+if len(ganttData) > 0:
+    maxGantt = max(ganttData, key= lambda database : database.maxOverlaps).maxOverlaps
+# for database in ganttData:
+#     heights.append(database.maxOverlaps / maxGantt)
+
+# heights = heights + ([ 1 ] * len(linearData + areaData))
+# heights = heights + ([0.5] * len(eventData))
+
+for database in databases:
+    if database.type == 'gantt':
+        heights.append(database.maxOverlaps / maxGantt)
+    elif database.type == 'linear':
+        heights.append(1.0)
+    elif database.type == 'area':
+        heights.append(1.0)
+    elif database.type == 'event':
+        heights.append(0.5)
+
+gdspec = gridspec.GridSpec(len(databases), 1, height_ratios=heights)
+
+# running index for charts
+chartIndex = 0
+for database in databases:
+    if database.type == 'gantt':
+        ganttChart(database, chartIndex)
+    elif database.type == 'linear':
+        linearChart(database, chartIndex)
+    elif database.type == 'area':
+        areaChart(database, chartIndex)
+    elif database.type == 'event':
+        eventChart(database, chartIndex)
     chartIndex += 1
 
 ### Plot the chart

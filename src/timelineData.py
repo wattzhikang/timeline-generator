@@ -105,6 +105,7 @@ class Database:
     :type filename: str
     """
     def __init__(self, chartJSON: dict):
+        self.type = chartJSON['type']
         self.createDatabase(chartJSON)
 
     def createDatabase(self, chartJSON: dict):
@@ -212,6 +213,7 @@ class GanttDatabase:
     
     """
     def __init__(self, chartJSON: dict):
+        self.type = chartJSON['type']
         self.createDatabase(chartJSON)
     
     def createDatabase(self, chartJSON: dict):
@@ -332,6 +334,7 @@ class EventDatabase:
     def __init__(self, chartJSON: dict):
         # because there may be multiple events on the same date, DO NOT take the date column
         # as the index
+        self.type = chartJSON['type']
         self.createDatabase(chartJSON)
     
     def createDatabase(self, chartJSON: dict):
