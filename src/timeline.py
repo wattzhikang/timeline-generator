@@ -109,11 +109,11 @@ for database in ganttData:
                 # that has a dashed line border, and that lighter color as the fill
                 chart.broken_barh([(dash.end, dash.extendedDuration())], (10 * level, 9), color=lighterHue, linestyle="--")
             if dataFileJSON['start'] is not None and dash.start > dataFileJSON['start']:
-                chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name)
+                chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name, rotation=30)
             else:
                 # otherwise the text will be off the chart
                 # so place the text at the beginning of the chart, and not the beginning of the dash
-                chart.text(dataFileJSON['start'], 10 * level + 3, dash.name)
+                chart.text(dataFileJSON['start'], 10 * level + 3, dash.name, rotation=30)
     
     chartIndex += 1
 
