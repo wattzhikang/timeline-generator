@@ -2,9 +2,10 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy
 import json
+import numpy as np
 
 from timelineData import *
-from colorGenerator import ColorGenerator
+from colorGenerator import ColorGenerator, lookupColor, lookupLighterColor
 
 ### Biographical information
 
@@ -27,13 +28,13 @@ def ganttChart(database: GanttDatabase, chartIndex: int):
         else: # otherwise, place it in the first available stack
             placed = False
             for stack in dashStacks: # look for the first stack the dash can be placed in
-                if len(stack) < 1 or stack[len(stack) - 1].maxEnd <= dash.start:
+                if len(stack) < 1 or stack[len(stack) - 1].maxEnd <= dash.minStart:
                     stack.append(dash)
                     placed = True
                     break
             if not placed: # if it still hasn't been placed, create a new stack for it
                 dashStacks.append([dash])
-    
+
     dashStacks.reverse() # cosmetic
 
     ## Plot biographical information
@@ -45,17 +46,49 @@ def ganttChart(database: GanttDatabase, chartIndex: int):
 
     for stack, level in zip(dashStacks, range(len(dashStacks))): # zip this with a random color object, don't worry, zip only uses shortest
         for dash, (hue, lighterHue) in zip(stack, ColorGenerator()):
+            if dash.color is not None:
+                # if the dash has a color, use that color instead of the generated one
+                hue = lookupColor(dash.color)
+                lighterHue = lookupLighterColor(dash.color)
+
+            if dash.fadeFrom is not None:
+                # Since matplotlib does not support gradients, we will hack it by
+                # creating a gradient image and displaying it as an image
+
+                # Create a gradient in which the white fades to the color of teh dash
+                # To accomplish this, we will create an array with the shape (10,100,3)
+                gradient = np.zeros((10, 100, 3), dtype=np.float32)
+                gradient[:, :, 0] = np.linspace(1, hue[0], 100)  # Red channel
+                gradient[:, :, 1] = np.linspace(1, hue[1], 100)  # Green channel
+                gradient[:, :, 2] = np.linspace(1, hue[2], 100)  # Blue channel
+
+                chart.imshow(gradient, extent=(dash.minStart, dash.start, 10 * level, 10 * level + 9), aspect='auto')
+
             chart.broken_barh([(dash.start, dash.duration())], (10 * level, 9), color=hue)
+
             if dash.extendTo is not None:
                 # If this dash is to be extended, put another dash at the end of this dash
                 # that has a dashed line border, and that lighter color as the fill
                 chart.broken_barh([(dash.end, dash.extendedDuration())], (10 * level, 9), color=lighterHue, linestyle="--")
+            
+            if dash.fadeTo is not None:
+                # Same as fadeFrom, but the gradient fades in the other direction
+                gradient = np.zeros((10, 100, 3), dtype=np.float32)
+                gradient[:, :, 0] = np.linspace(hue[0], 1, 100) # Red channel
+                gradient[:, :, 1] = np.linspace(hue[1], 1, 100) # Green channel
+                gradient[:, :, 2] = np.linspace(hue[2], 1, 100) # Blue channel
+
+                chart.imshow(gradient, extent=(dash.end, dash.maxEnd, 10 * level, 10 * level + 9), aspect='auto')
+        
             if dataFileJSON['start'] is not None and dash.start > dataFileJSON['start']:
-                chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name, rotation=30)
+                chart.text(dash.start + (dash.duration() * 0.33), 10 * level + 3, dash.name, rotation=20)
             else:
                 # otherwise the text will be off the chart
                 # so place the text at the beginning of the chart, and not the beginning of the dash
-                chart.text(dataFileJSON['start'], 10 * level + 3, dash.name, rotation=30)
+                chart.text(dataFileJSON['start'], 10 * level + 3, dash.name, rotation=20)
+    
+    # The imshow() method resets the y limits, so we need to set them again manually
+    chart.set_ylim(-1, 10 * len(dashStacks)) # set the y limits to the number of stacks
 
 ### Linear Data
 
@@ -107,7 +140,7 @@ def eventChart(database: EventDatabase, chartIndex: int):
             textcoords="offset points",
             va="top", ha="left",
             rotation_mode="anchor",
-            rotation=45
+            rotation=25
         )
 
     markerline.set_ydata(numpy.zeros(len(database))) #brings dots down to the bottom for clarity
@@ -135,6 +168,13 @@ dataFilePath = parser.parse_args().dataFilePath[0]
 dataFile = open(dataFilePath)
 dataFileJSON = json.load(dataFile)
 
+setMinDate, setMaxDate = None, None
+if 'start' in dataFileJSON:
+    setMinDate = dataFileJSON['start']
+
+if 'end' in dataFileJSON:
+    setMaxDate = dataFileJSON['end']
+
 databases = [ ]
 ganttData = [ ]
 linearData = [ ]
@@ -143,7 +183,7 @@ eventData = [ ]
 for chart in dataFileJSON['charts']:
     print(type(chart))
     if chart['type'] == 'gantt':
-        databases.append(GanttDatabase(chart))
+        databases.append(GanttDatabase(chart, chartMinDate=setMinDate, chartMaxDate=setMaxDate))
         ganttData.append(databases[len(databases) - 1])
     elif chart['type'] == 'event':
         databases.append(EventDatabase(chart))
@@ -213,11 +253,10 @@ if 'start' not in dataFileJSON or 'end' not in dataFileJSON:
         if maxDate == None or base.maxDate > maxDate:
             maxDate = base.maxDate
 
-if 'start' in dataFileJSON:
-    minDate = dataFileJSON['start']
-
-if 'end' in dataFileJSON:
-    maxDate = dataFileJSON['end']
+if setMinDate is not None:
+    minDate = setMinDate
+if setMaxDate is not None:
+    maxDate = setMaxDate
 
 for ax in plt.gcf().get_axes():
     ax.set_xlim(minDate, maxDate)
@@ -231,5 +270,7 @@ if 'majorInterval' in dataFileJSON:
 if 'minorInterval' in dataFileJSON:
     for ax in plt.gcf().get_axes():
         ax.xaxis.set_minor_locator(plt.MultipleLocator(dataFileJSON['minorInterval']))
+
+plt.subplots_adjust(hspace=0.0, left=0.02, bottom=0.03, top=0.955, right=0.915)
 
 plt.show()

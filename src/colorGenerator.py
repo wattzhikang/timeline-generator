@@ -44,3 +44,22 @@ def ColorGenerator():
         if newColor != lastColor:
             lastColor = newColor
             yield newColor, whiterColor
+
+def lookupColor(colorName: str):
+    """
+    Returns the RGB tuple for a given color name.
+    If the color name is not found, returns None.
+    """
+    try:
+        return mc.to_rgb(colorName)
+    except ValueError:
+        return None
+def lookupLighterColor(colorName: str):
+    """
+    Returns a lighter version of the RGB tuple for a given color name.
+    If the color name is not found, returns None.
+    """
+    color = lookupColor(colorName)
+    if color is not None:
+        return lighten_color(color, 0.5)
+    return None

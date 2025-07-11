@@ -8,15 +8,28 @@ class Dash:
     :cvar float start: The start date of this task
     :cvar float end: The end date of this task
     """
-    def __init__(self, name: str, start: float, end: float, extendTo: int=None, column: int = None):
+    def __init__(self, name: str, start: float, end: float, fadeFrom: float=None, fadeTo: float=None, extendTo: int=None, column: int = None, color: str = None):
         self.name = name
         self.start = start
         self.end = end
         self.column = column
         self.extendTo = extendTo
+        self.fadeFrom = fadeFrom
+        self.fadeTo = fadeTo
+        self.color = color
+
+        if extendTo is not None and fadeTo is not None:
+            raise ValueError("You cannot specify both `extendTo` and `fadeTo` for a dash. Please choose one or the other.")
+        
+        if fadeFrom is not None:
+            self.minStart = fadeFrom
+        else:
+            self.minStart = start
 
         if extendTo is not None:
             self.maxEnd = extendTo
+        elif fadeTo is not None:
+            self.maxEnd = fadeTo
         else:
             self.maxEnd = end
     
@@ -212,12 +225,16 @@ class GanttDatabase:
     """A database for Gantt data
     
     """
-    def __init__(self, chartJSON: dict):
+    def __init__(self, chartJSON: dict, chartMinDate: float = None, chartMaxDate: float = None):
         self.type = chartJSON['type']
-        self.createDatabase(chartJSON)
-    
-    def createDatabase(self, chartJSON: dict):
+        self.createDatabase(chartJSON, chartMinDate=chartMinDate, chartMaxDate=chartMaxDate)
+
+    def createDatabase(self, chartJSON: dict, chartMinDate: float = None, chartMaxDate: float = None):
         self.title = chartJSON['title']
+
+        chartDuration = None
+        if chartMinDate is not None and chartMaxDate is not None:
+            chartDuration = chartMaxDate - chartMinDate
 
         self.minStartDate = None
         self.maxStartDate = None
@@ -227,28 +244,46 @@ class GanttDatabase:
         self.dashes = [ ]
         for dashJSON in chartJSON['data']:
             name = dashJSON['label']
+            fadeFrom = None
+            if 'fadeFrom' in dashJSON:
+                fadeFrom = dashJSON['fadeFrom']
             start = dashJSON['start']
             end = dashJSON['end']
+            fadeTo = None
+            if 'fadeTo' in dashJSON:
+                fadeTo = dashJSON['fadeTo']
             extendTo = None
             if 'extendTo' in dashJSON:
                 extendTo = dashJSON['extendTo']
             column = None
             if 'column' in dashJSON:
                 column = dashJSON['column']
+            maxScale = None
+            if 'maxScale' in dashJSON:
+                maxScale = dashJSON['maxScale']
+            color = None
+            if 'color' in dashJSON:
+                color = dashJSON['color']
 
-            dash = Dash(name, start, end, extendTo=extendTo, column=column)
+            if chartDuration is not None and maxScale is not None and chartDuration > maxScale:
+                continue # skip this dash if the chart duration is greater than the maximum scale
 
-            if self.minStartDate is None or dash.start < self.minStartDate:
-                self.minStartDate = dash.start
-            if self.maxStartDate is  None or self.maxStartDate < dash.start:
-                self.maxStartDate = dash.start
+            dash = Dash(name, start, end, fadeFrom=fadeFrom, fadeTo=fadeTo, extendTo=extendTo, column=column, color=color)
+
+            if chartMinDate is not None and chartMinDate > dash.maxEnd:
+                continue # skip this dash if the chart min date is greater than the dash's end date
+
+            if self.minStartDate is None or dash.minStart < self.minStartDate:
+                self.minStartDate = dash.minStart
+            if self.maxStartDate is  None or self.maxStartDate < dash.minStart:
+                self.maxStartDate = dash.minStart
             if self.minEndDate is None or dash.maxEnd < self.minEndDate:
                 self.minEndDate = dash.maxEnd
             if self.maxEndDate is None or self.maxEndDate < dash.maxEnd:
                 self.maxEndDate = dash.maxEnd
 
             self.dashes.append(dash)
-        self.dashes.sort(key = lambda dash : dash.start)
+        self.dashes.sort(key = lambda dash : dash.minStart)
 
         self.minDate = self.minStartDate
         self.maxDate = self.maxEndDate
@@ -267,7 +302,7 @@ class GanttDatabase:
     def computeMaxOverlaps(self):
         # copy list of dashes and sort by start property
         starts = self.dashes[:]
-        starts.sort(key = lambda dash : dash.start)
+        starts.sort(key = lambda dash : dash.minStart)
 
         # copy list of dashes and sort by end property
         ends = self.dashes[:]
@@ -287,7 +322,7 @@ class GanttDatabase:
         nextEnd = 0
         while nextStart < len(starts) and nextEnd < len(ends):
             # if a dash is starting
-            if starts[nextStart].start < ends[nextEnd].maxEnd:
+            if starts[nextStart].minStart < ends[nextEnd].maxEnd:
                 # if a dash starts before the other dash(es) end,
                 # then there is an overlap
 
